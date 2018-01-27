@@ -1,5 +1,36 @@
 const Botmaster = require('botmaster');
 const MessengerBot = require('botmaster-messenger');
+
+var watson = require('watson-developer-cloud');
+var express = require('express')
+const readline = require('readline');
+const app = express()
+
+var conversation = new watson.ConversationV1({
+	username : '3c3e1393-36df-4327-8bbe-0b8cd7b27d28',
+	password : 'QPsIu4aNGAY7',
+	version_date : '2017-05-26'
+});
+
+/*conversation.listWorkspaces(function(err, response) {
+	if (err) {
+		console.error(err);
+	} else {
+		console.log(JSON.stringify(response, null, 2));
+	}
+});*/
+/*conversation.message({
+	workspace_id : '00eec2b2-f91a-4b20-b6e2-6abc9876ce65',
+	input : {
+		'text' : 'hello'
+	}
+}, function(err, response) {
+	if (err)
+		console.log('error:', err);
+	else
+		console.log(JSON.stringify(response, null, 2));
+});*/
+
 // const
   // express = require('express'),
   // bodyParser = require('body-parser'),
@@ -75,6 +106,23 @@ botmaster.use({
   name: 'my-incoming-middleware',
   controller: (bot, update) => {
     console.log(update);
-    return bot.reply(update, "Replying")
+    var response = replyFromWatson(bot, update, update.message.text)
+    return null
   }
 });
+
+// TODO: Log the answer in a database
+// console.log(`Thank you for your valuable feedback: ${answer}`);
+function replyFromWatson(bot, update, input) {
+  conversation.message({
+    workspace_id : '00eec2b2-f91a-4b20-b6e2-6abc9876ce65',
+    input : {
+      'text' : input
+    }
+  }, function(err, response) {
+  if (err)
+    console.log('error:', err);
+  else
+    console.log(bot.reply(update, response.output.text[0]));
+  });
+}
