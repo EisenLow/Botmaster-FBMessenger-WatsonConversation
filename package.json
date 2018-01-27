@@ -15,12 +15,13 @@
     "url": ""
   },
   "dependencies": {
-    "botmaster": "^2.3.0",
-    "botmaster-fulfill": "^3.1.2",
-    "botmaster-fulfill-actions": "^1.0.0",
+    "body-parser": "^1.18.2",
+    "botmaster": "^3.2.0",
     "cfenv": "^1.0.3",
     "express": "^4.16.2",
+    "http": "0.0.0",
     "ramda": "^0.25.0",
+    "request": "^2.83.0",
     "request-promise": "^4.1.1",
     "watson-developer-cloud": "^2.11.0"
   },
