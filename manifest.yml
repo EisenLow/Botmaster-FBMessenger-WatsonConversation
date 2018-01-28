@@ -1,15 +1,15 @@
 applications:
 - path: .
-  memory: 256M
+  memory: 128M
   instances: 1
   domain: eu-gb.mybluemix.net
-  name: your-app-name
+  name: NemoWebhook
   disk_quota: 512M
   env:
-    WATSON_CONVERSATION_USERNAME: 'your convo username'
-    WATSON_CONVERSATION_PASSWORD: 'your convo password'
-    WATSON_WORKSPACE_ID: 'your workspace id'
-    FACEBOOK_PAGE_TOKEN: 'your facebook page token'
-    FACEBOOK_VERIFY_TOKEN: 'your facebook verify token'
-    FACEBOOK_APP_SECRET: 'your facebook app secret'
+    WATSON_CONVERSATION_USERNAME: '3c3e1393-36df-4327-8bbe-0b8cd7b27d28'
+    WATSON_CONVERSATION_PASSWORD: 'QPsIu4aNGAY7'
+    WATSON_WORKSPACE_ID: '00eec2b2-f91a-4b20-b6e2-6abc9876ce65'
+    FACEBOOK_PAGE_TOKEN: 'EAADJtv2MShYBALvj3jSZCMb3Foh3L0cQLdvHuZAxKqzTX4XSny0kFgZCBou2rYd6STEUfuWt9WyYLXjkRYKJerQh3hysfZArj7OKmDPMQsddGr8TurUsgIA971DcuGI9AjtT8yQsvVInW3BYRcUkIiOcbjyvXnMIZAJXQYqPYqa6vatHMeaKR'
+    FACEBOOK_VERIFY_TOKEN: 'nemogcc2018hackathon'
+    FACEBOOK_APP_SECRET: 'EAADJtv2MShYBALMZCnKj8hiGqYaFJA7pCtLTSryOfnhCzCgcZBMqhZCkLsbabvwa4ZA4v7Fx9vdavZAWLzt0jbFrsZBjmmdqikM3J7GBl4pM64JCJLlmo0n8HgOWZCCe6dAKSnT8YwVUEiOExjDKOs6KmI0HdHZAgI527wReoZB0ZBJNPXSZBvfUZCK9'
     DEBUG: botmaster:*

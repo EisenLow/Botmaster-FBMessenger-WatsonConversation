@@ -1,128 +1,149 @@
+require('dotenv').config();
+
 const Botmaster = require('botmaster');
 const MessengerBot = require('botmaster-messenger');
-
 var watson = require('watson-developer-cloud');
+var request = require('request');
 var express = require('express')
 const readline = require('readline');
-const app = express()
+const fs = require('fs');
+const converter = require('video-converter');
+var ffmpeg = require('ffmpeg');
 
-var conversation = new watson.ConversationV1({
-	username : '3c3e1393-36df-4327-8bbe-0b8cd7b27d28',
-	password : 'QPsIu4aNGAY7',
-	version_date : '2017-05-26'
+converter.setFfmpegPath("/Applications/ffmpeg", function(err) {
+  if (err)
+    throw err;
+  }
+);
+
+const app = express()
+var port = process.env.PORT || 3000
+const myServer = app.listen(port, function() {
+  console.log("Listening..");
 });
 
-/*conversation.listWorkspaces(function(err, response) {
-	if (err) {
-		console.error(err);
-	} else {
-		console.log(JSON.stringify(response, null, 2));
+var stt = new watson.SpeechToTextV1({"username": process.env.TEXT_TO_SPEECH_USERNAME, "password": process.env.TEXT_TO_SPEECH_PASSWORD})
+
+function getSttParams() {
+  console.log("AUDIOURL:");
+  return {
+    audio: fs.createReadStream('voiceNote.mp3'),
+    content_type: 'audio/mp3',
+		model: 'en-US_NarrowbandModel',
+		content_type: 'audio/mp3',
+		'interim_results': true,
+		keywords_threshold: 0.3,
+		keywords: ['Nemo'],
+		timestamps: true
 	}
-});*/
-/*conversation.message({
-	workspace_id : '00eec2b2-f91a-4b20-b6e2-6abc9876ce65',
-	input : {
-		'text' : 'hello'
-	}
-}, function(err, response) {
-	if (err)
-		console.log('error:', err);
-	else
-		console.log(JSON.stringify(response, null, 2));
-});*/
+}
 
-// const
-  // express = require('express'),
-  // bodyParser = require('body-parser'),
-  // app = express().use(bodyParser.json()); // creates express http server
+function saveAudioFile(audioUrl) {}
 
-// const nemoServer = app.listen(3001);
-// app.listen(() => console.log('webhook is listeningon port 3001'));
-// Creates the endpoint for our webhook
-// app.post('/webhook', (req, res) => {
-//
-//   let body = req.body;
-//     // Checks this is an event from a page subscription
-//     if (body.object === 'page') {
-//
-//       // Iterates over each entry - there may be multiple if batched
-//       body.entry.forEach(function(entry) {
-//
-//         // Gets the message. entry.messaging is an array, but
-//         // will only ever contain one message, so we get index 0
-//         let webhook_event = entry.messaging[0];
-//         console.log(webhook_event);
-//       });
-//
-//       // Returns a '200 OK' response to all requests
-//       res.status(200).send('EVENT_RECEIVED');
-//     } else {
-//       // Returns a '404 Not Found' if event is not from a page subscription
-//       res.sendStatus(404);
-//     }
-// });
-
-// Adds support for GET requests to our webhook
-// app.get('/webhook', (req, res) => {
-//
-//   // Your verify token. Should be a random string.
-//   let VERIFY_TOKEN = "nemogcc2018hackathon"
-//
-//   // Parse the query params
-//   let mode = req.query['hub.mode'];
-//   let token = req.query['hub.verify_token'];
-//   let challenge = req.query['hub.challenge'];
-//
-//   // Checks if a token and mode is in the query string of the request
-//   if (mode && token) {
-//
-//     // Checks the mode and token sent is correct
-//     if (mode === 'subscribe' && token === VERIFY_TOKEN) {
-//
-//       // Responds with the challenge token from the request
-//       console.log('WEBHOOK_VERIFIED');
-//       res.status(200).send(challenge);
-//
-//     } else {
-//       // Responds with '403 Forbidden' if verify tokens do not match
-//       res.sendStatus(403);
-//     }
-//   }
-// });
+var conversation = new watson.ConversationV1({username: process.env.WATSON_CONVERSATION_USERNAME, password: process.env.WATSON_CONVERSATION_PASSWORD, version_date: '2017-05-26'});
 
 const messengerSettings = {
   credentials: {
-    verifyToken: 'nemogcc2018hackathon',
-    pageToken: 'EAADJtv2MShYBALvj3jSZCMb3Foh3L0cQLdvHuZAxKqzTX4XSny0kFgZCBou2rYd6STEUfuWt9WyYLXjkRYKJerQh3hysfZArj7OKmDPMQsddGr8TurUsgIA971DcuGI9AjtT8yQsvVInW3BYRcUkIiOcbjyvXnMIZAJXQYqPYqa6vatHMeaKR',
-    fbAppSecret: 'ad1134638921363f25799f6b51b4d5eb'
+    verifyToken: process.env.FACEBOOK_VERIFY_TOKEN,
+    pageToken: process.env.FACEBOOK_PAGE_TOKEN,
+    fbAppSecret: process.env.FACEBOOK_APP_SECRET
   },
-  webhookEndpoint: 'webhook',
+  webhookEndpoint: 'webhook'
 };
 
-const botmaster = new Botmaster();
+// BOT incoming message middleware
+const botmaster = new Botmaster({server: myServer});
 botmaster.addBot(new MessengerBot(messengerSettings))
 botmaster.use({
   type: 'incoming',
   name: 'my-incoming-middleware',
   controller: (bot, update) => {
-    console.log(update);
-    var response = replyFromWatson(bot, update, update.message.text)
-    return null
+    if (update.message.attachments) {
+      replyFromSpeechToText(bot, update);
+      console.log(JSON.stringify(update, null, 2));
+      return null
+    } else {
+      console.log("Fb user message: " + update.message.text + "\n");
+      var response = replyFromWatson(bot, update, update.message.text);
+      return null
+    }
   }
 });
+
+function replyFromSpeechToText(bot, update) {
+  if (update.message.attachments) {
+    console.log("Getting attachment...\n" + JSON.stringify(update.message.attachments, null, 2));
+    var audioUrl = update.message.attachments[0].payload.url;
+    // Get the audio file
+    var stream = request(audioUrl).on('response', function(response) {
+      console.log(response.statusCode) // 200
+      console.log(response.headers['content-type']) // 'image/png'
+    }).pipe(fs.createWriteStream('voiceNote.mp4'));
+    stream.on('finish', function() {
+      // Audio file is saved locally, now construct the params for Watson request
+
+      // convert mp4 to mp3
+
+      // convert mp4 to mp3
+      converter.convert("voiceNote.mp4", "voiceNote.mp3", function(err) {
+        if (err)
+          throw err;
+        console.log("done");
+
+        var params = getSttParams();
+        console.log("Params:" + JSON.stringify(params, null, 2));
+        stt.recognize(params, function(error, transcript) {
+          if (error)
+            console.log('Error RECEIVED:', JSON.stringify(error, null, 2));
+          else
+            console.log(transcript);
+          }
+        );
+      });
+      // try {
+      //   var process = new ffmpeg('voiceNote.mp4');
+      //   process.then(function(video) {
+      //     // Callback mode
+      //     video.fnExtractSoundToMP3('voiceNote.mp3', function(error, file) {
+      // 			console.log(error);
+      //       if (!error) {
+      //         console.log('Audio file: ' + file);
+      //         var params = getSttParams();
+      //         console.log("Params:" + JSON.stringify(params, null, 2));
+      //         stt.recognize(params, function(error, transcript) {
+      //           if (error)
+      //             console.log('Error RECEIVED:', JSON.stringify(error, null, 2));
+      //           else
+      //             console.log(JSON.stringify(transcript, null, 2));
+      //           });
+      //       } else {
+      //         console.log('Error:');
+      //       }
+      //     });
+      //   }, function(err) {
+      //       	console.log('Error: ' + err);
+      //   		});
+      //   } catch (e) {
+      // 			console.log(e.code);
+      // 			console.log(e.msg);
+      // 	}
+    });
+  }
+}
 
 // TODO: Log the answer in a database
 // console.log(`Thank you for your valuable feedback: ${answer}`);
 function replyFromWatson(bot, update, input) {
   conversation.message({
-    workspace_id : '00eec2b2-f91a-4b20-b6e2-6abc9876ce65',
-    input : {
-      'text' : input
+    workspace_id: process.env.WATSON_WORKSPACE_ID,
+    input: {
+      'text': input
     }
   }, function(err, response) {
-  if (err)
-    console.log('error:', err);
-  else
-    console.log(bot.reply(update, response.output.text[0]));
+    if (err)
+      console.log('error:', err);
+    else
+      bot.reply(update, response.output.text[0]);
+    console.log("Nemo responds: " + response.output.text[0] + "\n");
   });
 }
