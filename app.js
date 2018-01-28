@@ -10,7 +10,7 @@ const fs = require('fs');
 const converter = require('video-converter');
 var ffmpeg = require('ffmpeg');
 
-converter.setFfmpegPath("/Applications/ffmpeg", function(err) {
+converter.setFfmpegPath("libs/ffmpeg", function(err) {
   if (err)
     throw err;
   }
